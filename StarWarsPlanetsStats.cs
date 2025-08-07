@@ -1,12 +1,13 @@
 ﻿using StarWarsOpenAPI.APIDataAccess;
 using StarWarsOpenAPI.DTOs;
 using System.Text.Json;
+using static StarWarsOpenAPI.StarWarsPlanetsStats;
 
 namespace StarWarsOpenAPI
 {
     public static class StringExtensions
     {
-        public static int? ToIntOrNull(this string? toBeConverted)   //making this an extension method as this has no role in starwarstat class
+        public static int? ToIntOrNull(this string? toBeConverted)   //making this an extension method as this has NO role in starwarstat class
         {
             if (int.TryParse(toBeConverted, out int parsedType))
             {
@@ -32,26 +33,87 @@ namespace StarWarsOpenAPI
             string restOfAPI = "planets/";
           
             string? json = null;
+
+            /********This is problematic code as the URL is blocked by our IT)
             try
-            {
-                //_reader = new ApiDataReader();
+            {     
                 json = await _reader.Read(baseaddr, restOfAPI);
             }
             catch (HttpRequestException e)
             {
                 Console.WriteLine($"Request error: {e.Message}");
-               // return;
             }
-            if (json is null)
+           *************************************************************/
             {
-               // _secondaryReader = new MockStarWarsApiDataReader();
-                json = await _secondaryReader.Read(baseaddr, restOfAPI);
+                if (json is null)
+                {
+                    json = await _secondaryReader.Read(baseaddr, restOfAPI);
+                }
+                   var root = JsonSerializer.Deserialize<Root>(json);
+                //var root = JsonSerializer.Deserialize<List<Results>>(json);
+                var planets = ToPlanets(root);
+            foreach (var planet in planets)
+            {
+                Console.WriteLine(planet);
             }
-            var root = JsonSerializer.Deserialize<Root>(json);
+                Console.WriteLine();
+                Console.WriteLine("The statistics of which property would you like to see?");
+                Console.WriteLine("Population");
+                Console.WriteLine("diameter");
+                Console.WriteLine("surface water");
 
-            var planets = ToPlanets(root);
-           // PrettyPrint(root);
+               
+                var userChoice = Console.ReadLine();
+               
+                if (userChoice == "Population")
+                {
+                    ShowStatistics(userChoice, planets, planet => planet.Population);
+                }
+                if (userChoice == "Diamter")
+                {
+                    ShowStatistics(userChoice, planets, planet => planet.Diameter);
+                }
+                if (userChoice == "SurfaceWater")
+                {
+                    ShowStatistics(userChoice, planets, planet => planet.SurfaceWater);
+                }
+                else
+                {
+                    Console.WriteLine("Invalid choice.");
+                }
+
+                // PrettyPrint(root);
+            }
         }
+
+        private void ShowStatistics(string userChoice, IEnumerable<Planet> planets, Func<Planet, int?> value)
+        {
+            var maxStat = planets.MaxBy(value);
+            var minStat = planets.MinBy(value);
+            Console.WriteLine($"max {userChoice} is for planet:" + $"{maxStat.Name} with value = {value}");
+            Console.WriteLine($"min {userChoice} is for planet:" + $"{minStat.Name} with value = {value}");
+        }
+
+        /***********this is one way of doing this with fewer params, there's another way***************************************
+        private void ShowStatistics(string? userChoice, IEnumerable<Planet> items)
+        {
+            var propInfo = typeof(Planet).GetProperty(userChoice);
+            if (propInfo == null)
+            {
+                Console.WriteLine($"Property '{userChoice}' not found on type {typeof(Planet).Name}.");
+            }
+            else
+            {
+                Console.WriteLine($"Property '{userChoice}' found on type {typeof(Planet).Name}.");
+            }
+
+            var maxStat = items.MaxBy(p => propInfo.GetValue(p));
+            var minStat = items.MinBy(p => propInfo.GetValue(p));
+            Console.WriteLine($"max {userChoice} is for planet:" + $"{maxStat.Name} with value = {propInfo.GetValue(maxStat)}");
+            Console.WriteLine($"min {userChoice} is for planet:" + $"{minStat.Name} with value = {propInfo.GetValue(minStat)}");
+        }
+
+        *************************************************************************************************************************/
 
         private IEnumerable<Planet> ToPlanets(Root? root)
         {
@@ -68,6 +130,11 @@ namespace StarWarsOpenAPI
         }
         public readonly record struct Planet
         {
+            public string Name { get; }
+            public int Diameter { get; }
+            public int? SurfaceWater { get; }
+            public int? Population { get; }
+
             public Planet(string name, int diameter, int? surfaceWater, int? population)
             {
                 if(name is null)
@@ -79,11 +146,6 @@ namespace StarWarsOpenAPI
                 SurfaceWater = surfaceWater;
                 Population = population;
             }
-
-            public string Name { get;  }
-            public int Diameter { get; }
-            public int? SurfaceWater {  get; }
-            public int? Population { get; }
 
             public static explicit operator Planet(Results planetDto)
             {
@@ -124,6 +186,7 @@ namespace StarWarsOpenAPI
                     Console.WriteLine($"{"",-15}|");
                 }
             }
+
         }
     }
 }
