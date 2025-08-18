@@ -15,7 +15,7 @@ namespace StarWarsOpenAPI
         {
             try
             {
-                await new StarWarsPlanetsStats(new ApiDataReader(),new MockStarWarsApiDataReader()).run();
+                await new StarWarsPlanetsStats(new ApiDataReader(),new MockStarWarsApiDataReader()).Run();
             }
             catch (Exception ex)
             {
