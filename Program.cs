@@ -15,7 +15,17 @@ namespace StarWarsOpenAPI
         {
             try
             {
-                await new StarWarsPlanetsStats(new ApiDataReader(),new MockStarWarsApiDataReader()).Run();
+                var consoleUserInteractor = new ConsoleUserInteractor();
+                var planetsStatUserInteractor = new PlanetsStatsUserInteractor(consoleUserInteractor);
+
+                await new StarWarsPlanetsStats(
+                    new PlanetFromApiReader(
+                        new ApiDataReader(),
+                        new MockStarWarsApiDataReader(),
+                        consoleUserInteractor),
+                    new PlanetsStatisticsAnalyzer(
+                        planetsStatUserInteractor),
+                        planetsStatUserInteractor).Run();
             }
             catch (Exception ex)
             {
